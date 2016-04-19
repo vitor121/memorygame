@@ -51,11 +51,11 @@ function Game(tileNames) {
   }
 }
 
-Game.MESSAGE_CLICK = 'clique em uma carta.';
-Game.MESSAGE_ONE_MORE = 'Clique em mais uma carta.';
-Game.MESSAGE_MISS = 'Tenta denovo guilherme.';
-Game.MESSAGE_MATCH = 'acertou uma, vamos la!.';
-Game.MESSAGE_WON = 'Guilherme voce venceu, nos vencemos!';
+Game.MESSAGE_CLICK = 'Clique em uma carta.';
+Game.MESSAGE_ONE_MORE = 'Selecione mais uma carta.'
+Game.MESSAGE_MISS = 'tenta denovo kkk.';
+Game.MESSAGE_MATCH = 'Ta quase laaaa.';
+Game.MESSAGE_WON = 'Voce venceu Guilherme!';
 
 
 

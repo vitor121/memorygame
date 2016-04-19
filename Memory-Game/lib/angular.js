@@ -6,11 +6,29 @@
 (function(window, document, undefined) {
 'use strict';
 
+////////////////////////////////////
 
+/**
+ * @ngdoc function
+ * @name angular.lowercase
+ * @function
+ *
+ * @description Converts the specified string to lowercase.
+ * @param {string} string String to be converted to lowercase.
+ * @returns {string} Lowercased string.
+ */
 var lowercase = function(string){return isString(string) ? string.toLowerCase() : string;};
 
 
-
+/**
+ * @ngdoc function
+ * @name angular.uppercase
+ * @function
+ *
+ * @description Converts the specified string to uppercase.
+ * @param {string} string String to be converted to uppercase.
+ * @returns {string} Uppercased string.
+ */
 var uppercase = function(string){return isString(string) ? string.toUpperCase() : string;};
 
 
@@ -26,6 +44,9 @@ var manualUppercase = function(s) {
 };
 
 
+// String#toLowerCase and String#toUpperCase don't produce correct results in browsers with Turkish
+// locale, for this reason we need to detect this case and redefine lowercase/uppercase methods
+// with correct but slower alternatives.
 if ('i' !== 'I'.toLowerCase()) {
   lowercase = manualLowercase;
   uppercase = manualUppercase;
@@ -35,22 +56,48 @@ function fromCharCode(code) {return String.fromCharCode(code);}
 
 
 var Error             = window.Error,
-   
+    /** holds major version number for IE or NaN for real browsers */
     msie              = int((/msie (\d+)/.exec(lowercase(navigator.userAgent)) || [])[1]),
-    jqLite,           
-    jQuery,           
+    jqLite,           // delay binding since jQuery could be loaded after us.
+    jQuery,           // delay binding
     slice             = [].slice,
     push              = [].push,
     toString          = Object.prototype.toString,
 
-    
+    /** @name angular */
     angular           = window.angular || (window.angular = {}),
     angularModule,
- 
+    /** @name angular.module.ng */
     nodeName_,
     uid               = ['0', '0', '0'];
 
-
+/**
+ * @ngdoc function
+ * @name angular.forEach
+ * @function
+ *
+ * @description
+ * Invokes the `iterator` function once for each item in `obj` collection, which can be either an
+ * object or an array. The `iterator` function is invoked with `iterator(value, key)`, where `value`
+ * is the value of an object property or an array element and `key` is the object property key or
+ * array element index. Specifying a `context` for the function is optional.
+ *
+ * Note: this function was previously known as `angular.foreach`.
+ *
+   <pre>
+     var values = {name: 'misko', gender: 'male'};
+     var log = [];
+     angular.forEach(values, function(value, key){
+       this.push(key + ': ' + value);
+     }, log);
+     expect(log).toEqual(['name: misko', 'gender:male']);
+   </pre>
+ *
+ * @param {Object|Array} obj Object to iterate over.
+ * @param {Function} iterator Iterator function.
+ * @param {Object=} context Object to become context (`this`) for the iterator function.
+ * @returns {Object|Array} Reference to `obj`.
+ */
 function forEach(obj, iterator, context) {
   var key;
   if (obj) {
@@ -95,11 +142,23 @@ function forEachSorted(obj, iterator, context) {
 }
 
 
+/**
+ * when using forEach the params are value, key, but it is often useful to have key, value.
+ * @param {function(string, *)} iteratorFn
+ * @returns {function(*, string)}
+ */
 function reverseParams(iteratorFn) {
   return function(value, key) { iteratorFn(key, value) };
 }
 
-
+/**
+ * A consistent way of creating unique IDs in angular. The ID is a sequence of alpha numeric
+ * characters such as '012ABC'. The reason why we are not using simply a number counter is that
+ * the number string gets longer over time, and it can also overflow, where as the the nextId
+ * will grow much slower, it is a string, and it will never overflow.
+ *
+ * @returns an unique alpha-numeric string
+ */
 function nextUid() {
   var index = uid.length;
   var digit;
@@ -122,7 +181,18 @@ function nextUid() {
   return uid.join('');
 }
 
-
+/**
+ * @ngdoc function
+ * @name angular.extend
+ * @function
+ *
+ * @description
+ * Extends the destination object `dst` by copying all of the properties from the `src` object(s)
+ * to `dst`. You can specify multiple `src` objects.
+ *
+ * @param {Object} dst Destination object.
+ * @param {...Object} src Source object(s).
+ */
 function extend(dst) {
   forEach(arguments, function(obj){
     if (obj !== dst) {
@@ -144,46 +214,170 @@ function inherit(parent, extra) {
 }
 
 
-
+/**
+ * @ngdoc function
+ * @name angular.noop
+ * @function
+ *
+ * @description
+ * A function that performs no operations. This function can be useful when writing code in the
+ * functional style.
+   <pre>
+     function foo(callback) {
+       var result = calculateResult();
+       (callback || angular.noop)(result);
+     }
+   </pre>
+ */
 function noop() {}
 noop.$inject = [];
 
 
+/**
+ * @ngdoc function
+ * @name angular.identity
+ * @function
+ *
+ * @description
+ * A function that returns its first argument. This function is useful when writing code in the
+ * functional style.
+ *
+   <pre>
+     function transformer(transformationFn, value) {
+       return (transformationFn || identity)(value);
+     };
+   </pre>
+ */
 function identity($) {return $;}
 identity.$inject = [];
 
 
 function valueFn(value) {return function() {return value;};}
 
-
+/**
+ * @ngdoc function
+ * @name angular.isUndefined
+ * @function
+ *
+ * @description
+ * Determines if a reference is undefined.
+ *
+ * @param {*} value Reference to check.
+ * @returns {boolean} True if `value` is undefined.
+ */
 function isUndefined(value){return typeof value == 'undefined';}
 
 
+/**
+ * @ngdoc function
+ * @name angular.isDefined
+ * @function
+ *
+ * @description
+ * Determines if a reference is defined.
+ *
+ * @param {*} value Reference to check.
+ * @returns {boolean} True if `value` is defined.
+ */
 function isDefined(value){return typeof value != 'undefined';}
 
 
+/**
+ * @ngdoc function
+ * @name angular.isObject
+ * @function
+ *
+ * @description
+ * Determines if a reference is an `Object`. Unlike `typeof` in JavaScript, `null`s are not
+ * considered to be objects.
+ *
+ * @param {*} value Reference to check.
+ * @returns {boolean} True if `value` is an `Object` but not `null`.
+ */
 function isObject(value){return value != null && typeof value == 'object';}
 
 
+/**
+ * @ngdoc function
+ * @name angular.isString
+ * @function
+ *
+ * @description
+ * Determines if a reference is a `String`.
+ *
+ * @param {*} value Reference to check.
+ * @returns {boolean} True if `value` is a `String`.
+ */
 function isString(value){return typeof value == 'string';}
 
 
+/**
+ * @ngdoc function
+ * @name angular.isNumber
+ * @function
+ *
+ * @description
+ * Determines if a reference is a `Number`.
+ *
+ * @param {*} value Reference to check.
+ * @returns {boolean} True if `value` is a `Number`.
+ */
 function isNumber(value){return typeof value == 'number';}
 
 
+/**
+ * @ngdoc function
+ * @name angular.isDate
+ * @function
+ *
+ * @description
+ * Determines if a value is a date.
+ *
+ * @param {*} value Reference to check.
+ * @returns {boolean} True if `value` is a `Date`.
+ */
 function isDate(value){
   return toString.apply(value) == '[object Date]';
 }
 
 
+/**
+ * @ngdoc function
+ * @name angular.isArray
+ * @function
+ *
+ * @description
+ * Determines if a reference is an `Array`.
+ *
+ * @param {*} value Reference to check.
+ * @returns {boolean} True if `value` is an `Array`.
+ */
 function isArray(value) {
   return toString.apply(value) == '[object Array]';
 }
 
 
+/**
+ * @ngdoc function
+ * @name angular.isFunction
+ * @function
+ *
+ * @description
+ * Determines if a reference is a `Function`.
+ *
+ * @param {*} value Reference to check.
+ * @returns {boolean} True if `value` is a `Function`.
+ */
 function isFunction(value){return typeof value == 'function';}
 
 
+/**
+ * Checks if `obj` is a window object.
+ *
+ * @private
+ * @param {*} obj Object to check
+ * @returns {boolean} True if `obj` is a window obj.
+ */
 function isWindow(obj) {
   return obj && obj.document && obj.location && obj.alert && obj.setInterval;
 }
@@ -208,14 +402,27 @@ function trim(value) {
   return isString(value) ? value.replace(/^\s*/, '').replace(/\s*$/, '') : value;
 }
 
-
+/**
+ * @ngdoc function
+ * @name angular.isElement
+ * @function
+ *
+ * @description
+ * Determines if a reference is a DOM element (or wrapped jQuery element).
+ *
+ * @param {*} value Reference to check.
+ * @returns {boolean} True if `value` is a DOM element (or wrapped jQuery element).
+ */
 function isElement(node) {
   return node &&
-    (node.nodeName  
-    || (node.bind && node.find));  
+    (node.nodeName  // we are a direct element
+    || (node.bind && node.find));  // we have a bind and find method part of jQuery API
 }
 
-
+/**
+ * @param str 'key1,key2,...'
+ * @returns {object} in the form of {key1:true, key2:true, ...}
+ */
 function makeMap(str){
   var obj = {}, items = str.split(","), i;
   for ( i = 0; i < items.length; i++ )
@@ -246,6 +453,18 @@ function map(obj, iterator, context) {
 }
 
 
+/**
+ * @description
+ * Determines the number of elements in an array, the number of properties an object has, or
+ * the length of a string.
+ *
+ * Note: This function is used to augment the Object type in Angular expressions. See
+ * {@link angular.Object} for more information about Angular arrays.
+ *
+ * @param {Object|Array|string} obj Object, array, or string to inspect.
+ * @param {boolean} [ownPropsOnly=false] Count only "own" properties in an object
+ * @returns {number} The size of `obj` or `0` if `obj` is neither an object nor an array.
+ */
 function size(obj, ownPropsOnly) {
   var size = 0, key;
 
@@ -293,6 +512,28 @@ function isLeafNode (node) {
   return false;
 }
 
+/**
+ * @ngdoc function
+ * @name angular.copy
+ * @function
+ *
+ * @description
+ * Creates a deep copy of `source`, which should be an object or an array.
+ *
+ * * If no destination is supplied, a copy of the object or array is created.
+ * * If a destination is provided, all of its elements (for array) or properties (for objects)
+ *   are deleted and then all elements/properties from the source are copied to it.
+ * * If  `source` is not an object or array, `source` is returned.
+ *
+ * Note: this function is used to augment the Object type in Angular expressions. See
+ * {@link angular.module.ng.$filter} for more information about Angular arrays.
+ *
+ * @param {*} source The source that will be used to make a copy.
+ *                   Can be any type, including primitives, `null`, and `undefined`.
+ * @param {(Object|Array)=} destination Destination into which the source is copied. If
+ *     provided, must be of the same type as `source`.
+ * @returns {*} The copy or updated `destination`, if `destination` was specified.
+ */
 function copy(source, destination){
   if (isWindow(source) || isScope(source)) throw Error("Can't copy Window or Scope");
   if (!destination) {
@@ -327,7 +568,9 @@ function copy(source, destination){
   return destination;
 }
 
-
+/**
+ * Create a shallow copy of an object
+ */
 function shallowCopy(src, dst) {
   dst = dst || {};
 
@@ -341,6 +584,30 @@ function shallowCopy(src, dst) {
 }
 
 
+/**
+ * @ngdoc function
+ * @name angular.equals
+ * @function
+ *
+ * @description
+ * Determines if two objects or two values are equivalent. Supports value types, arrays and
+ * objects.
+ *
+ * Two objects or values are considered equivalent if at least one of the following is true:
+ *
+ * * Both objects or values pass `===` comparison.
+ * * Both objects or values are of the same type and all of their properties pass `===` comparison.
+ * * Both values are NaN. (In JavasScript, NaN == NaN => false. But we consider two NaN as equal)
+ *
+ * During a property comparision, properties of `function` type and properties with names
+ * that begin with `$` are ignored.
+ *
+ * Scope and DOMWindow objects are being compared only be identify (`===`).
+ *
+ * @param {*} o1 Object or value to compare.
+ * @param {*} o2 Object or value to compare.
+ * @returns {boolean} True if arguments are equal.
+ */
 function equals(o1, o2) {
   if (o1 === o2) return true;
   if (o1 === null || o2 === null) return false;
@@ -386,6 +653,21 @@ function sliceArgs(args, startIndex) {
 }
 
 
+/**
+ * @ngdoc function
+ * @name angular.bind
+ * @function
+ *
+ * @description
+ * Returns a function which calls function `fn` bound to `self` (`self` becomes the `this` for
+ * `fn`). You can supply optional `args` that are are prebound to the function. This feature is also
+ * known as [function currying](http://en.wikipedia.org/wiki/Currying).
+ *
+ * @param {Object} self Context which `fn` should be evaluated in.
+ * @param {function()} fn Function to be bound.
+ * @param {...*} args Optional arguments to be prebound to the `fn` function call.
+ * @returns {function()} Function that wraps the `fn` with all the specified bindings.
+ */
 function bind(self, fn) {
   var curryArgs = arguments.length > 2 ? sliceArgs(arguments, 2) : [];
   if (isFunction(fn) && !(fn instanceof RegExp)) {
@@ -401,7 +683,7 @@ function bind(self, fn) {
             : fn.call(self);
         };
   } else {
- 
+    // in IE, native methods are not functions so they cannot be bound (note: they don't need to be)
     return fn;
   }
 }
@@ -424,12 +706,34 @@ function toJsonReplacer(key, value) {
 }
 
 
-
+/**
+ * @ngdoc function
+ * @name angular.toJson
+ * @function
+ *
+ * @description
+ * Serializes input into a JSON-formatted string.
+ *
+ * @param {Object|Array|Date|string|number} obj Input to be serialized into JSON.
+ * @param {boolean=} pretty If set to true, the JSON output will contain newlines and whitespace.
+ * @returns {string} Jsonified string representing `obj`.
+ */
 function toJson(obj, pretty) {
   return JSON.stringify(obj, toJsonReplacer, pretty ? '  ' : null);
 }
 
 
+/**
+ * @ngdoc function
+ * @name angular.fromJson
+ * @function
+ *
+ * @description
+ * Deserializes a JSON string.
+ *
+ * @param {string} json JSON string to deserialize.
+ * @returns {Object|Array|Date|string|number} Deserialized thingy.
+ */
 function fromJson(json) {
   return isString(json)
       ? JSON.parse(json)
@@ -447,19 +751,26 @@ function toBoolean(value) {
   return value;
 }
 
-
+/**
+ * @returns {string} Returns the string representation of the element.
+ */
 function startingTag(element) {
   element = jqLite(element).clone();
   try {
-
-
+    // turns out IE does not let you set .html() on elements which
+    // are not allowed to have children. So we just ignore it.
     element.html('');
   } catch(e) {}
   return jqLite('<div>').append(element).html().match(/^(<[^>]+>)/)[1];
 }
 
 
+/////////////////////////////////////////////////
 
+/**
+ * Parses an escaped url query string into key-value pairs.
+ * @returns Object.<(string|boolean)>
+ */
 function parseKeyValue(/**string*/keyValue) {
   var obj = {}, key_value, key;
   forEach((keyValue || "").split('&'), function(keyValue){
@@ -481,7 +792,17 @@ function toKeyValue(obj) {
 }
 
 
-
+/**
+ * We need our custom mehtod because encodeURIComponent is too agressive and doesn't follow
+ * http://www.ietf.org/rfc/rfc3986.txt with regards to the character set (pchar) allowed in path
+ * segments:
+ *    segment       = *pchar
+ *    pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+ *    pct-encoded   = "%" HEXDIG HEXDIG
+ *    unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+ *    sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+ *                     / "*" / "+" / "," / ";" / "="
+ */
 function encodeUriSegment(val) {
   return encodeUriQuery(val, true).
              replace(/%26/gi, '&').
@@ -490,7 +811,17 @@ function encodeUriSegment(val) {
 }
 
 
-
+/**
+ * This method is intended for encoding *key* or *value* parts of query component. We need a custom
+ * method becuase encodeURIComponent is too agressive and encodes stuff that doesn't have to be
+ * encoded per http://tools.ietf.org/html/rfc3986:
+ *    query       = *( pchar / "/" / "?" )
+ *    pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+ *    unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+ *    pct-encoded   = "%" HEXDIG HEXDIG
+ *    sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+ *                     / "*" / "+" / "," / ";" / "="
+ */
 function encodeUriQuery(val, pctEncodeSpaces) {
   return encodeURIComponent(val).
              replace(/%40/gi, '@').
@@ -501,7 +832,34 @@ function encodeUriQuery(val, pctEncodeSpaces) {
 }
 
 
-
+/**
+ * @ngdoc directive
+ * @name angular.module.ng.$compileProvider.directive.ngApp
+ *
+ * @element ANY
+ * @param {angular.Module} ngApp on optional application
+ *   {@link angular.module module} name to load.
+ *
+ * @description
+ *
+ * Use this directive to auto-bootstrap on application. Only
+ * one directive can be used per HTML document. The directive
+ * designates the root of the application and is typically placed
+ * ot the root of the page.
+ *
+ * In the example below if the `ngApp` directive would not be placed
+ * on the `html` element then the document would not be compiled
+ * and the `{{ 1+2 }}` would not be resolved to `3`.
+ *
+ * `ngApp` is the easiest way to bootstrap an application.
+ *
+ <doc:example>
+   <doc:source>
+    I can add: 1 + 2 =  {{ 1+2 }}
+   </doc:source>
+ </doc:example>
+ *
+ */
 function angularInit(element, bootstrap) {
   var elements = [element],
       appElement,
@@ -546,7 +904,18 @@ function angularInit(element, bootstrap) {
   }
 }
 
-
+/**
+ * @ngdoc function
+ * @name angular.bootstrap
+ * @description
+ * Use this function to manually start up angular application.
+ *
+ * See: {@link guide/dev_guide.bootstrap.manual_bootstrap Bootstrap}
+ *
+ * @param {Element} element DOM element which is the root of angular application.
+ * @param {Array<String|Function>=} modules an array of module declarations. See: {@link angular.module modules}
+ * @returns {angular.module.auto.$injector} Returns the newly created injector for this app.
+ */
 function bootstrap(element, modules) {
   element = jqLite(element);
   modules = modules || [];
@@ -592,7 +961,9 @@ function bindJQuery() {
   angular.element = jqLite;
 }
 
-
+/**
+ * throw error of the argument is falsy.
+ */
 function assertArg(arg, name, reason) {
   if (!arg) {
     throw new Error("Argument '" + (name || '?') + "' is " + (reason || "required"));
@@ -610,7 +981,13 @@ function assertArgFn(arg, name, acceptArrayAnnotation) {
   return arg;
 }
 
-
+/**
+ * @ngdoc interface
+ * @name angular.Module
+ * @description
+ *
+ * Interface for configuring angular {@link angular.module modules}.
+ */
 
 function setupModuleLoader(window) {
 
@@ -622,6 +999,52 @@ function setupModuleLoader(window) {
     /** @type {Object.<string, angular.Module>} */
     var modules = {};
 
+    /**
+     * @ngdoc function
+     * @name angular.module
+     * @description
+     *
+     * The `angular.module` is a global place for creating and registering Angular modules. All
+     * modules (angular core or 3rd party) that should be available to an application must be
+     * registered using this mechanism.
+     *
+     *
+     * # Module
+     *
+     * A module is a collocation of services, directives, filters, and configure information. Module
+     * is used to configure the {@link angular.module.AUTO.$injector $injector}.
+     *
+     * <pre>
+     * // Create a new module
+     * var myModule = angular.module('myModule', []);
+     *
+     * // register a new service
+     * myModule.value('appName', 'MyCoolApp');
+     *
+     * // configure existing services inside initialization blocks.
+     * myModule.config(function($locationProvider) {
+     *   // Configure existing providers
+     *   $locationProvider.hashPrefix('!');
+     * });
+     * </pre>
+     *
+     * Then you can create an injector and load your modules like this:
+     *
+     * <pre>
+     * var injector = angular.injector(['ng', 'MyModule'])
+     * </pre>
+     *
+     * However it's more likely that you'll just use
+     * {@link angular.module.ng.$compileProvider.directive.ngApp ngApp} or
+     * {@link angular.bootstrap} to simplify this process for you.
+     *
+     * @param {!string} name The name of the module to create or retrieve.
+     * @param {Array.<string>=} requires If specified then new module is being created. If unspecified then the
+     *        the module is being retrieved for further configuration.
+     * @param {Function} configFn Option configuration function for the module. Same as
+     *        {@link angular.Module#config Module#config()}.
+     * @returns {module} new module with the {@link angular.Module} api.
+     */
     return function module(name, requires, configFn) {
       if (requires && modules.hasOwnProperty(name)) {
         modules[name] = null;
@@ -645,39 +1068,137 @@ function setupModuleLoader(window) {
           _invokeQueue: invokeQueue,
           _runBlocks: runBlocks,
 
-        
+          /**
+           * @ngdoc property
+           * @name angular.Module#requires
+           * @propertyOf angular.Module
+           * @returns {Array.<string>} List of module names which must be loaded before this module.
+           * @description
+           * Holds the list of modules which the injector will load before the current module is loaded.
+           */
           requires: requires,
 
-          
+          /**
+           * @ngdoc property
+           * @name angular.Module#name
+           * @propertyOf angular.Module
+           * @returns {string} Name of the module.
+           * @description
+           */
           name: name,
 
 
-       
+          /**
+           * @ngdoc method
+           * @name angular.Module#provider
+           * @methodOf angular.Module
+           * @param {string} name service name
+           * @param {Function} providerType Construction function for creating new instance of the service.
+           * @description
+           * See {@link angular.module.AUTO.$provide#provider $provide.provider()}.
+           */
           provider: invokeLater('$provide', 'provider'),
 
-        
+          /**
+           * @ngdoc method
+           * @name angular.Module#factory
+           * @methodOf angular.Module
+           * @param {string} name service name
+           * @param {Function} providerFunction Function for creating new instance of the service.
+           * @description
+           * See {@link angular.module.AUTO.$provide#factory $provide.factory()}.
+           */
           factory: invokeLater('$provide', 'factory'),
 
+          /**
+           * @ngdoc method
+           * @name angular.Module#service
+           * @methodOf angular.Module
+           * @param {string} name service name
+           * @param {Function} constructor A constructor function that will be instantiated.
+           * @description
+           * See {@link angular.module.AUTO.$provide#service $provide.service()}.
+           */
           service: invokeLater('$provide', 'service'),
 
+          /**
+           * @ngdoc method
+           * @name angular.Module#value
+           * @methodOf angular.Module
+           * @param {string} name service name
+           * @param {*} object Service instance object.
+           * @description
+           * See {@link angular.module.AUTO.$provide#value $provide.value()}.
+           */
           value: invokeLater('$provide', 'value'),
 
-       
+          /**
+           * @ngdoc method
+           * @name angular.Module#constant
+           * @methodOf angular.Module
+           * @param {string} name constant name
+           * @param {*} object Constant value.
+           * @description
+           * Because the constant are fixed, they get applied before other provide methods.
+           * See {@link angular.module.AUTO.$provide#constant $provide.constant()}.
+           */
           constant: invokeLater('$provide', 'constant', 'unshift'),
 
-        
+          /**
+           * @ngdoc method
+           * @name angular.Module#filter
+           * @methodOf angular.Module
+           * @param {string} name Filter name.
+           * @param {Function} filterFactory Factory function for creating new instance of filter.
+           * @description
+           * See {@link angular.module.ng.$filterProvider#register $filterProvider.register()}.
+           */
           filter: invokeLater('$filterProvider', 'register'),
 
-         
+          /**
+           * @ngdoc method
+           * @name angular.Module#controller
+           * @methodOf angular.Module
+           * @param {string} name Controller name.
+           * @param {Function} constructor Controller constructor function.
+           * @description
+           * See {@link angular.module.ng.$controllerProvider#register $controllerProvider.register()}.
+           */
           controller: invokeLater('$controllerProvider', 'register'),
 
-        
+          /**
+           * @ngdoc method
+           * @name angular.Module#directive
+           * @methodOf angular.Module
+           * @param {string} name directive name
+           * @param {Function} directiveFactory Factory function for creating new instance of
+           * directives.
+           * @description
+           * See {@link angular.module.ng.$compileProvider.directive $compileProvider.directive()}.
+           */
           directive: invokeLater('$compileProvider', 'directive'),
 
-        
+          /**
+           * @ngdoc method
+           * @name angular.Module#config
+           * @methodOf angular.Module
+           * @param {Function} configFn Execute this function on module load. Useful for service
+           *    configuration.
+           * @description
+           * Use this method to register work which needs to be performed on module loading.
+           */
           config: config,
 
-        
+          /**
+           * @ngdoc method
+           * @name angular.Module#run
+           * @methodOf angular.Module
+           * @param {Function} initializationFn Execute this function after injector creation.
+           *    Useful for application initialization.
+           * @description
+           * Use this method to register work which needs to be performed when the injector with
+           * with the current module is finished loading.
+           */
           run: function(block) {
             runBlocks.push(block);
             return this;
@@ -690,7 +1211,12 @@ function setupModuleLoader(window) {
 
         return  moduleInstance;
 
-       
+        /**
+         * @param {string} provider
+         * @param {string} method
+         * @param {String=} insertMethod
+         * @returns {angular.Module}
+         */
         function invokeLater(provider, method, insertMethod) {
           return function() {
             invokeQueue[insertMethod || 'push']([provider, method, arguments]);
@@ -703,7 +1229,19 @@ function setupModuleLoader(window) {
 
 }
 
-
+/**
+ * @ngdoc property
+ * @name angular.version
+ * @description
+ * An object that contains information about the current AngularJS version. This object has the
+ * following properties:
+ *
+ * - `full` – `{string}` – Full version string, such as "0.9.18".
+ * - `major` – `{number}` – Major version number, such as "0".
+ * - `minor` – `{number}` – Minor version number, such as "9".
+ * - `dot` – `{number}` – Dot version number, such as "18".
+ * - `codeName` – `{string}` – Code name of the release, such as "jiggling-armfat".
+ */
 var version = {
   full: '1.0.0rc6',    // all of these placeholder strings will be replaced by rake's
   major: 1,    // compile task
@@ -821,7 +1359,79 @@ function publishExternalAPI(angular){
   ]);
 }
 
+//////////////////////////////////
+//JQLite
+//////////////////////////////////
 
+/**
+ * @ngdoc function
+ * @name angular.element
+ * @function
+ *
+ * @description
+ * Wraps a raw DOM element or HTML string as a [jQuery](http://jquery.com) element.
+ * `angular.element` can be either an alias for [jQuery](http://api.jquery.com/jQuery/) function, if
+ * jQuery is available, or a function that wraps the element or string in Angular's jQuery lite
+ * implementation (commonly referred to as jqLite).
+ *
+ * Real jQuery always takes precedence over jqLite, provided it was loaded before `DOMContentLoaded`
+ * event fired.
+ *
+ * jqLite is a tiny, API-compatible subset of jQuery that allows
+ * Angular to manipulate the DOM. jqLite implements only the most commonly needed functionality
+ * within a very small footprint, so only a subset of the jQuery API - methods, arguments and
+ * invocation styles - are supported.
+ *
+ * Note: All element references in Angular are always wrapped with jQuery or jqLite; they are never
+ * raw DOM references.
+ *
+ * ## Angular's jQuery lite provides the following methods:
+ *
+ * - [addClass()](http://api.jquery.com/addClass/)
+ * - [after()](http://api.jquery.com/after/)
+ * - [append()](http://api.jquery.com/append/)
+ * - [attr()](http://api.jquery.com/attr/)
+ * - [bind()](http://api.jquery.com/bind/)
+ * - [children()](http://api.jquery.com/children/)
+ * - [clone()](http://api.jquery.com/clone/)
+ * - [contents()](http://api.jquery.com/contents/)
+ * - [css()](http://api.jquery.com/css/)
+ * - [data()](http://api.jquery.com/data/)
+ * - [eq()](http://api.jquery.com/eq/)
+ * - [find()](http://api.jquery.com/find/) - Limited to lookups by tag name.
+ * - [hasClass()](http://api.jquery.com/hasClass/)
+ * - [html()](http://api.jquery.com/html/)
+ * - [next()](http://api.jquery.com/next/)
+ * - [parent()](http://api.jquery.com/parent/)
+ * - [prepend()](http://api.jquery.com/prepend/)
+ * - [prop()](http://api.jquery.com/prop/)
+ * - [ready()](http://api.jquery.com/ready/)
+ * - [remove()](http://api.jquery.com/remove/)
+ * - [removeAttr()](http://api.jquery.com/removeAttr/)
+ * - [removeClass()](http://api.jquery.com/removeClass/)
+ * - [removeData()](http://api.jquery.com/removeData/)
+ * - [replaceWith()](http://api.jquery.com/replaceWith/)
+ * - [text()](http://api.jquery.com/text/)
+ * - [toggleClass()](http://api.jquery.com/toggleClass/)
+ * - [unbind()](http://api.jquery.com/unbind/)
+ * - [val()](http://api.jquery.com/val/)
+ * - [wrap()](http://api.jquery.com/wrap/)
+ *
+ * ## In addtion to the above, Angular privides an additional method to both jQuery and jQuery lite:
+ *
+ * - `controller(name)` - retrieves the controller of the current element or its parent. By default
+ *   retrieves controller associated with the `ngController` directive. If `name` is provided as
+ *   camelCase directive name, then the controller for this directive will be retrieved (e.g.
+ *   `'ngModel'`).
+ * - `injector()` - retrieves the injector of the current element or its parent.
+ * - `scope()` - retrieves the {@link api/angular.module.ng.$rootScope.Scope scope} of the current
+ *   element or its parent.
+ * - `inheritedData()` - same as `data()`, but walks up the DOM until a value is found or the top
+ *   parent element is reached.
+ *
+ * @param {string|DOMElement} element HTML string or DOMElement to be wrapped into jQuery.
+ * @returns {Object} jQuery object.
+ */
 
 var jqCache = {},
     jqName = 'ng-' + new Date().getTime(),
@@ -839,7 +1449,11 @@ function jqNextId() { return (jqId++); }
 var SPECIAL_CHARS_REGEXP = /([\:\-\_]+(.))/g;
 var MOZ_HACK_REGEXP = /^moz([A-Z])/;
 
-
+/**
+ * Converts snake_case to camelCase.
+ * Also there is special case for Moz prefix starting with upper case letter.
+ * @param name Name to normalize
+ */
 function camelCase(name) {
   return name.
     replace(SPECIAL_CHARS_REGEXP, function(_, separator, letter, offset) {
@@ -848,7 +1462,13 @@ function camelCase(name) {
     replace(MOZ_HACK_REGEXP, 'Moz$1');
 }
 
-
+/////////////////////////////////////////////
+// jQuery mutation patch
+//
+//  In conjunction with bindJQuery intercepts all jQuery's DOM destruction apis and fires a
+// $destroy event on all DOM nodes being removed.
+//
+/////////////////////////////////////////////
 
 function JQLitePatchJQueryRemove(name, dispatchThis) {
   var originalJqFn = jQuery.fn[name];
@@ -902,7 +1522,8 @@ function JQLite(element) {
 
   if (isString(element)) {
     var div = document.createElement('div');
- 
+    // Read about the NoScope elements here:
+    // http://msdn.microsoft.com/en-us/library/ms533897(VS.85).aspx
     div.innerHTML = '<div>&nbsp;</div>' + element; // IE insanity to make NoScope elements work!
     div.removeChild(div.firstChild); // remove the superfluous div
     JQLiteAddNodes(this, div.childNodes);
@@ -937,7 +1558,7 @@ function JQLiteRemoveData(element) {
       });
     }
     delete jqCache[cacheId];
-    element[jqName] = undefined; /
+    element[jqName] = undefined; // ie does not allow deletion of attributes on elements.
   }
 }
 
@@ -1000,7 +1621,8 @@ function JQLiteController(element, name) {
 function JQLiteInheritedData(element, name, value) {
   element = jqLite(element);
 
-
+  // if element is the document object work with the html element instead
+  // this makes $(document).scope() possible
   if(element[0].nodeType == 9) {
     element = element.find('html');
   }
@@ -1011,7 +1633,9 @@ function JQLiteInheritedData(element, name, value) {
   }
 }
 
-
+//////////////////////////////////////////
+// Functions which are declared directly.
+//////////////////////////////////////////
 var JQLitePrototype = JQLite.prototype = {
   ready: function(fn) {
     var fired = false;
@@ -1023,7 +1647,7 @@ var JQLitePrototype = JQLite.prototype = {
     }
 
     this.bind('DOMContentLoaded', trigger); // works for modern browsers and IE9
-
+    // we can not use jqLite since we are not done loading and jQuery could be loaded later.
     JQLite(window).bind('load', trigger); // fallback to window.onload for others
   },
   toString: function() {
@@ -1042,7 +1666,11 @@ var JQLitePrototype = JQLite.prototype = {
   splice: [].splice
 };
 
-
+//////////////////////////////////////////
+// Functions iterating getter/setters.
+// these functions return self on setter and
+// value on get.
+//////////////////////////////////////////
 var BOOLEAN_ATTR = {};
 forEach('multiple,selected,checked,disabled,readOnly,required'.split(','), function(value) {
   BOOLEAN_ATTR[lowercase(value)] = value;
@@ -1173,32 +1801,35 @@ forEach({
     element.innerHTML = value;
   }
 }, function(fn, name){
- 
+  /**
+   * Properties: writes return selection, reads return first value
+   */
   JQLite.prototype[name] = function(arg1, arg2) {
     var i, key;
 
-
+    // JQLiteHasClass has only two arguments, but is a getter-only fn, so we need to special-case it
+    // in a way that survives minification.
     if (((fn.length == 2 && (fn !== JQLiteHasClass && fn !== JQLiteController)) ? arg1 : arg2) === undefined) {
       if (isObject(arg1)) {
-       
+        // we are a write, but the object properties are the key/values
         for(i=0; i < this.length; i++) {
           for (key in arg1) {
             fn(this[i], key, arg1[key]);
           }
         }
-       
+        // return self for chaining
         return this;
       } else {
-    
+        // we are a read, so read the first child.
         if (this.length)
           return fn(this[0], arg1, arg2);
       }
     } else {
-     
+      // we are a write, so apply to all children
       for(i=0; i < this.length; i++) {
         fn(this[i], arg1, arg2);
       }
-    
+      // return self for chaining
       return this;
     }
     return fn.$dv;
@@ -1240,14 +1871,15 @@ function createEventHandler(element) {
       fn.call(element, event);
     });
 
-   
+    // Remove monkey-patched methods (IE),
+    // as they would cause memory leaks in IE8.
     if (msie < 8) {
-   
+      // IE7 does not allow to delete property on native object
       event.preventDefault = null;
       event.stopPropagation = null;
       event.isDefaultPrevented = null;
     } else {
-     
+      // It shouldn't affect normal browsers (native methods are defined on prototype).
       delete event.preventDefault;
       delete event.stopPropagation;
       delete event.isDefaultPrevented;
@@ -1257,7 +1889,11 @@ function createEventHandler(element) {
   return eventHandler;
 }
 
-
+//////////////////////////////////////////
+// Functions iterating traversal.
+// These functions chain results into a single
+// selector.
+//////////////////////////////////////////
 forEach({
   removeData: JQLiteRemoveData,
 
@@ -1437,7 +2073,18 @@ forEach({
   };
 });
 
-
+/**
+ * Computes a hash of an 'obj'.
+ * Hash of a:
+ *  string is string
+ *  number is number as string
+ *  object is either result of calling $$hashKey function on the object or uniquely generated id,
+ *         that is also assigned to the $$hashKey property of the object.
+ *
+ * @param obj
+ * @returns {string} hash string such that the same input will have the same hash string.
+ *         The resulting string key is in 'type:hashKey' format.
+ */
 function hashKey(obj) {
   var objType = typeof obj,
       key;
@@ -1456,22 +2103,34 @@ function hashKey(obj) {
   return objType + ':' + key;
 }
 
-
+/**
+ * HashMap which can use objects as keys
+ */
 function HashMap(array){
   forEach(array, this.put, this);
 }
 HashMap.prototype = {
- 
+  /**
+   * Store key value pair
+   * @param key key to store can be any type
+   * @param value value to store can be any type
+   */
   put: function(key, value) {
     this[hashKey(key)] = value;
   },
 
-  
+  /**
+   * @param key
+   * @returns the value for the key
+   */
   get: function(key) {
     return this[hashKey(key)];
   },
 
- 
+  /**
+   * Remove the key/value pair
+   * @param key
+   */
   remove: function(key) {
     var value = this[key = hashKey(key)];
     delete this[key];
@@ -1479,10 +2138,15 @@ HashMap.prototype = {
   }
 };
 
-
+/**
+ * A map where multiple values can be added to the same key such that they form a queue.
+ * @returns {HashQueueMap}
+ */
 function HashQueueMap() {}
 HashQueueMap.prototype = {
-  
+  /**
+   * Same as array push, but using an array as the value for the hash
+   */
   push: function(key, value) {
     var array = this[key = hashKey(key)];
     if (!array) {
@@ -1492,7 +2156,9 @@ HashQueueMap.prototype = {
     }
   },
 
- 
+  /**
+   * Same as array shift, but using an array as the value for the hash
+   */
   shift: function(key) {
     var array = this[key = hashKey(key)];
     if (array) {
@@ -1506,7 +2172,43 @@ HashQueueMap.prototype = {
   }
 };
 
+/**
+ * @ngdoc function
+ * @name angular.injector
+ * @function
+ *
+ * @description
+ * Creates an injector function that can be used for retrieving services as well as for
+ * dependency injection (see {@link guide/dev_guide.di dependency injection}).
+ *
 
+ * @param {Array.<string|Function>} modules A list of module functions or their aliases. See
+ *        {@link angular.module}. The `ng` module must be explicitly added.
+ * @returns {function()} Injector function. See {@link angular.module.AUTO.$injector $injector}.
+ *
+ * @example
+ * Typical usage
+ * <pre>
+ *   // create an injector
+ *   var $injector = angular.injector(['ng']);
+ *
+ *   // use the injector to kick of your application
+ *   // use the type inference to auto inject arguments, or use implicit injection
+ *   $injector.invoke(function($rootScope, $compile, $document){
+ *     $compile($document)($rootScope);
+ *     $rootScope.$digest();
+ *   });
+ * </pre>
+ */
+
+
+/**
+ * @ngdoc overview
+ * @name angular.module.AUTO
+ * @description
+ *
+ * Implicit module which gets automatically added to each {@link angular.module.AUTO.$injector $injector}.
+ */
 
 var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
 var FN_ARG_SPLIT = /,/;
@@ -1527,7 +2229,248 @@ function inferInjectionArgs(fn) {
   return fn.$inject;
 }
 
+///////////////////////////////////////
 
+/**
+ * @ngdoc object
+ * @name angular.module.AUTO.$injector
+ * @function
+ *
+ * @description
+ *
+ * `$injector` is used to retrieve object instances as defined by
+ * {@link angular.module.AUTO.$provide provider}, instantiate types, invoke methods,
+ * and load modules.
+ *
+ * The following always holds true:
+ *
+ * <pre>
+ *   var $injector = angular.injector();
+ *   expect($injector.get('$injector')).toBe($injector);
+ *   expect($injector.invoke(function($injector){
+ *     return $injector;
+ *   }).toBe($injector);
+ * </pre>
+ *
+ * # Injection Function Annotation
+ *
+ * JavaScript does not have annotations, and annotations are needed for dependency injection. The
+ * following ways are all valid way of annotating function with injection arguments and are equivalent.
+ *
+ * <pre>
+ *   // inferred (only works if code not minified/obfuscated)
+ *   $inject.invoke(function(serviceA){});
+ *
+ *   // annotated
+ *   function explicit(serviceA) {};
+ *   explicit.$inject = ['serviceA'];
+ *   $inject.invoke(explicit);
+ *
+ *   // inline
+ *   $inject.invoke(['serviceA', function(serviceA){}]);
+ * </pre>
+ *
+ * ## Inference
+ *
+ * In JavaScript calling `toString()` on a function returns the function definition. The definition can then be
+ * parsed and the function arguments can be extracted. *NOTE:* This does not work with minfication, and obfuscation
+ * tools since these tools change the argument names.
+ *
+ * ## `$inject` Annotation
+ * By adding a `$inject` property onto a function the injection parameters can be specified.
+ *
+ * ## Inline
+ * As an array of injection names, where the last item in the array is the function to call.
+ */
+
+/**
+ * @ngdoc method
+ * @name angular.module.AUTO.$injector#get
+ * @methodOf angular.module.AUTO.$injector
+ *
+ * @description
+ * Return an instance of the service.
+ *
+ * @param {string} name The name of the instance to retrieve.
+ * @return {*} The instance.
+ */
+
+/**
+ * @ngdoc method
+ * @name angular.module.AUTO.$injector#invoke
+ * @methodOf angular.module.AUTO.$injector
+ *
+ * @description
+ * Invoke the method and supply the method arguments from the `$injector`.
+ *
+ * @param {!function} fn The function to invoke. The function arguments come form the function annotation.
+ * @param {Object=} self The `this` for the invoked method.
+ * @param {Object=} locals Optional object. If preset then any argument names are read from this object first, before
+ *   the `$injector` is consulted.
+ * @return the value returned by the invoked `fn` function.
+ */
+
+/**
+ * @ngdoc method
+ * @name angular.module.AUTO.$injector#instantiate
+ * @methodOf angular.module.AUTO.$injector
+ * @description
+ * Create a new instance of JS type. The method takes a constructor function invokes the new operator and supplies
+ * all of the arguments to the constructor function as specified by the constructor annotation.
+ *
+ * @param {function} Type Annotated constructor function.
+ * @param {Object=} locals Optional object. If preset then any argument names are read from this object first, before
+ *   the `$injector` is consulted.
+ * @return new instance of `Type`.
+ */
+
+
+/**
+ * @ngdoc object
+ * @name angular.module.AUTO.$provide
+ *
+ * @description
+ *
+ * Use `$provide` to register new providers with the `$injector`. The providers are the factories for the instance.
+ * The providers share the same name as the instance they create with the `Provider` suffixed to them.
+ *
+ * A provider is an object with a `$get()` method. The injector calls the `$get` method to create a new instance of
+ * a service. The Provider can have additional methods which would allow for configuration of the provider.
+ *
+ * <pre>
+ *   function GreetProvider() {
+ *     var salutation = 'Hello';
+ *
+ *     this.salutation = function(text) {
+ *       salutation = text;
+ *     };
+ *
+ *     this.$get = function() {
+ *       return function (name) {
+ *         return salutation + ' ' + name + '!';
+ *       };
+ *     };
+ *   }
+ *
+ *   describe('Greeter', function(){
+ *
+ *     beforeEach(module(function($provide) {
+ *       $provide.provider('greet', GreetProvider);
+ *     });
+ *
+ *     it('should greet', inject(function(greet) {
+ *       expect(greet('angular')).toEqual('Hello angular!');
+ *     }));
+ *
+ *     it('should allow configuration of salutation', function() {
+ *       module(function(greetProvider) {
+ *         greetProvider.salutation('Ahoj');
+ *       });
+ *       inject(function(greet) {
+ *         expect(greet('angular')).toEqual('Ahoj angular!');
+ *       });
+ *     )};
+ *
+ *   });
+ * </pre>
+ */
+
+/**
+ * @ngdoc method
+ * @name angular.module.AUTO.$provide#provider
+ * @methodOf angular.module.AUTO.$provide
+ * @description
+ *
+ * Register a provider for a service. The providers can be retrieved and can have additional configuration methods.
+ *
+ * @param {string} name The name of the instance. NOTE: the provider will be available under `name + 'Provider'` key.
+ * @param {(Object|function())} provider If the provider is:
+ *
+ *   - `Object`: then it should have a `$get` method. The `$get` method will be invoked using
+ *               {@link angular.module.AUTO.$injector#invoke $injector.invoke()} when an instance needs to be created.
+ *   - `Constructor`: a new instance of the provider will be created using
+ *               {@link angular.module.AUTO.$injector#instantiate $injector.instantiate()}, then treated as `object`.
+ *
+ * @returns {Object} registered provider instance
+ */
+
+/**
+ * @ngdoc method
+ * @name angular.module.AUTO.$provide#factory
+ * @methodOf angular.module.AUTO.$provide
+ * @description
+ *
+ * A short hand for configuring services if only `$get` method is required.
+ *
+ * @param {string} name The name of the instance.
+ * @param {function()} $getFn The $getFn for the instance creation. Internally this is a short hand for
+ * `$provide.provider(name, {$get: $getFn})`.
+ * @returns {Object} registered provider instance
+ */
+
+
+/**
+ * @ngdoc method
+ * @name angular.module.AUTO.$provide#service
+ * @methodOf angular.module.AUTO.$provide
+ * @description
+ *
+ * A short hand for registering service of given class.
+ *
+ * @param {string} name The name of the instance.
+ * @param {Function} constructor A class (constructor function) that will be instantiated.
+ * @returns {Object} registered provider instance
+ */
+
+
+/**
+ * @ngdoc method
+ * @name angular.module.AUTO.$provide#value
+ * @methodOf angular.module.AUTO.$provide
+ * @description
+ *
+ * A short hand for configuring services if the `$get` method is a constant.
+ *
+ * @param {string} name The name of the instance.
+ * @param {*} value The value.
+ * @returns {Object} registered provider instance
+ */
+
+
+/**
+ * @ngdoc method
+ * @name angular.module.AUTO.$provide#constant
+ * @methodOf angular.module.AUTO.$provide
+ * @description
+ *
+ * A constant value, but unlike {@link angular.module.AUTO.$provide#value value} it can be injected
+ * into configuration function (other modules) and it is not interceptable by
+ * {@link angular.module.AUTO.$provide#decorator decorator}.
+ *
+ * @param {string} name The name of the constant.
+ * @param {*} value The constant value.
+ * @returns {Object} registered instance
+ */
+
+
+/**
+ * @ngdoc method
+ * @name angular.module.AUTO.$provide#decorator
+ * @methodOf angular.module.AUTO.$provide
+ * @description
+ *
+ * Decoration of service, allows the decorator to intercept the service instance creation. The
+ * returned instance may be the original instance, or a new instance which delegates to the
+ * original instance.
+ *
+ * @param {string} name The name of the service to decorate.
+ * @param {function()} decorator This function will be invoked when the service needs to be
+ *    instanciated. The function is called using the {@link angular.module.AUTO.$injector#invoke
+ *    injector.invoke} method and is therefore fully injectable. Local injection arguments:
+ *
+ *    * `$delegate` - The original service instance, which can be monkey patched, configured,
+ *      decorated or delegated to.
+ */
 
 
 function createInjector(modulesToLoad) {
@@ -1560,7 +2503,9 @@ function createInjector(modulesToLoad) {
 
   return instanceInjector;
 
-
+  ////////////////////////////////////
+  // $provider
+  ////////////////////////////////////
 
   function supportObject(delegate) {
     return function(key, value) {
@@ -1741,7 +2686,21 @@ function createInjector(modulesToLoad) {
     };
   }
 }
-
+/**
+ * @ngdoc function
+ * @name angular.module.ng.$anchorScroll
+ * @requires $window
+ * @requires $location
+ * @requires $rootScope
+ *
+ * @description
+ * When called, it checks current value of `$location.hash()` and scroll to related element,
+ * according to rules specified in
+ * {@link http://dev.w3.org/html5/spec/Overview.html#the-indicated-part-of-the-document Html5 spec}.
+ *
+ * It also watches the `$location.hash()` and scroll whenever it changes to match any anchor.
+ * This can be disabled by calling `$anchorScrollProvider.disableAutoScrolling()`.
+ */
 function $AnchorScrollProvider() {
 
   var autoScrollingEnabled = true;
@@ -1753,7 +2712,10 @@ function $AnchorScrollProvider() {
   this.$get = ['$window', '$location', '$rootScope', function($window, $location, $rootScope) {
     var document = $window.document;
 
- 
+    // helper function to get first anchor from a NodeList
+    // can't use filter.filter, as it accepts only instances of Array
+    // and IE can't convert NodeList to an array using [].slice
+    // TODO(vojta): use filter if we change it to accept lists as well
     function getFirstAnchor(list) {
       var result = null;
       forEach(list, function(element) {
@@ -1790,7 +2752,28 @@ function $AnchorScrollProvider() {
   }];
 }
 
-
+/**
+ * @ngdoc object
+ * @name angular.module.ng.$browser
+ * @requires $log
+ * @description
+ * This object has two goals:
+ *
+ * - hide all the global state in the browser caused by the window object
+ * - abstract away all the browser specific features and inconsistencies
+ *
+ * For tests we provide {@link angular.module.ngMock.$browser mock implementation} of the `$browser`
+ * service, which can be used for convenient testing of the application without the interaction with
+ * the real browser apis.
+ */
+/**
+ * @param {object} window The global window object.
+ * @param {object} document jQuery wrapped document.
+ * @param {object} body jQuery wrapped document.body.
+ * @param {function()} XHR XMLHttpRequest constructor.
+ * @param {object} $log console.log or an object with the same interface.
+ * @param {object} $sniffer $sniffer service
+ */
 function Browser(window, document, body, $log, $sniffer) {
   var self = this,
       rawDocument = document[0],
@@ -1809,7 +2792,10 @@ function Browser(window, document, body, $log, $sniffer) {
   self.$$completeOutstandingRequest = completeOutstandingRequest;
   self.$$incOutstandingRequestCount = function() { outstandingRequestCount++; };
 
- 
+  /**
+   * Executes the `fn` function(supports currying) and decrements the `outstandingRequestCallbacks`
+   * counter. If the counter reaches 0, all the `outstandingRequestCallbacks` are executed.
+   */
   function completeOutstandingRequest(fn) {
     try {
       fn.apply(null, sliceArgs(arguments, 1));
@@ -1827,9 +2813,16 @@ function Browser(window, document, body, $log, $sniffer) {
     }
   }
 
-  
+  /**
+   * @private
+   * Note: this method is used only by scenario runner
+   * TODO(vojta): prefix this method with $$ ?
+   * @param {function()} callback Function that will be called when no outstanding request
+   */
   self.notifyWhenNoOutstandingRequests = function(callback) {
-    
+    // force browser to execute all pollFns - this is needed so that cookies and other pollers fire
+    // at some deterministic time in respect to the test runner's actions. Leaving things up to the
+    // regular poller would result in flaky tests.
     forEach(pollFns, function(pollFn){ pollFn(); });
 
     if (outstandingRequestCount === 0) {
@@ -1839,18 +2832,39 @@ function Browser(window, document, body, $log, $sniffer) {
     }
   };
 
- 
+  //////////////////////////////////////////////////////////////
+  // Poll Watcher API
+  //////////////////////////////////////////////////////////////
   var pollFns = [],
       pollTimeout;
 
-
+  /**
+   * @ngdoc method
+   * @name angular.module.ng.$browser#addPollFn
+   * @methodOf angular.module.ng.$browser
+   *
+   * @param {function()} fn Poll function to add
+   *
+   * @description
+   * Adds a function to the list of functions that poller periodically executes,
+   * and starts polling if not started yet.
+   *
+   * @returns {function()} the added function
+   */
   self.addPollFn = function(fn) {
     if (isUndefined(pollTimeout)) startPoller(100, setTimeout);
     pollFns.push(fn);
     return fn;
   };
 
- 
+  /**
+   * @param {number} interval How often should browser call poll functions (ms)
+   * @param {function()} setTimeout Reference to a real or fake `setTimeout` function.
+   *
+   * @description
+   * Configures the poller to run in the specified intervals, using the specified
+   * setTimeout fn and kicks it off.
+   */
   function startPoller(interval, setTimeout) {
     (function check() {
       forEach(pollFns, function(pollFn){ pollFn(); });
